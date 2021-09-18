@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from "react";
+import { ethers } from "ethers";
 
 import { Box, Center, Text } from "@chakra-ui/react";
 
 import AppNavbar from "../components/AppNavbar";
 import AppPrimaryButton from "../components/AppPrimaryButton";
 import useAppToast from "../hooks/useAppToast.hook";
+import WavePortal from "../../artifacts/contracts/WavePortal.sol/WavePortal.json";
+
+function useWavePortalContract() {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const wavePortalContract = new ethers.Contract(
+    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    WavePortal.abi,
+    signer
+  );
+  return wavePortalContract;
+}
 
 type HomeState = {
   currentAccount: string;
@@ -12,33 +25,50 @@ type HomeState = {
 };
 
 export default function Home() {
+  const { ethereum } = window;
+  const toast = useAppToast();
   const [state, setState] = useState<HomeState>({
     currentAccount: "",
     web3Enabled: false,
   });
-  const toast = useAppToast();
 
-  const { ethereum } = window;
+  async function showNoWalletFoundToast() {
+    toast.info({
+      title: "No Wallet Found",
+      description: "Make sure to have installed MetaMask or similar wallet",
+    });
+  }
 
-  function checkIfWalletIsConnected() {
+  async function checkIfWalletIsConnected() {
     if (!ethereum) {
-      toast.info({
-        title: "No Wallet Found",
-        description: "Make sure to have installed MetaMask or similar wallet",
-      });
+      showNoWalletFoundToast();
 
       return;
     }
 
-    return setState({
-      ...state,
-      web3Enabled: true,
-    });
+    try {
+      const accounts = await ethereum.request({ method: "eth_accounts" });
+
+      if (accounts.length > 0) {
+        return setState({
+          ...state,
+          currentAccount: accounts[0],
+        });
+      }
+
+      return setState({
+        ...state,
+        web3Enabled: true,
+      });
+    } catch (error) {}
   }
 
   async function connectWallet() {
     try {
-      const accounts = await ethereum.request({ method: "eth_accounts" });
+      const accounts = await ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      console.log("connectWallet | accounts", accounts);
 
       if (accounts.length > 0) {
         return setState({
@@ -58,13 +88,39 @@ export default function Home() {
     }
   }
 
+  async function wave() {
+    if (!ethereum) {
+      return showNoWalletFoundToast();
+    }
+
+    await connectWallet();
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(
+      "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      WavePortal.abi,
+      signer
+    );
+    const waveTxn = await contract.wave();
+    console.log("⛏️ Mining...", waveTxn.hash);
+    waveTxn.wait();
+    console.log("Mined --", waveTxn.hash);
+
+    const count = await contract.getTotalWaves();
+
+    toast.info({
+      title: "Total Waves",
+      description: `Total Waves are ${count}`,
+    });
+  }
+
   useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
 
   return (
     <Box height="100%">
-      <AppNavbar />
+      <AppNavbar onClickActionButton={() => connectWallet()} />
 
       <Box height="100vh" p={10}>
         <Center>
@@ -90,13 +146,12 @@ export default function Home() {
 
           <Box h="20px" />
 
-          <AppPrimaryButton size="lg">Wave</AppPrimaryButton>
+          <AppPrimaryButton onClick={() => wave()} size="lg">
+            Wave
+          </AppPrimaryButton>
         </Box>
       </Box>
 
-      {/* <Box p={10} height="250px">
-        <Text fontWeight="bold">Socials</Text>
-      </Box> */}
       <Box p={5} display="flex" justifyContent="center" alignItems="center">
         <Text>Built with ❤️ by</Text>
         <Box w="5px" />

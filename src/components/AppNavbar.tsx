@@ -3,7 +3,11 @@ import { Box, Text, Spacer } from "@chakra-ui/react";
 
 import AppPrimaryButton from "./AppPrimaryButton";
 
-export default function AppNavbar() {
+export type AppNavbarProps = {
+  onClickActionButton?(): void;
+};
+
+export default function AppNavbar({ onClickActionButton }: AppNavbarProps) {
   return (
     <Box
       height="60px"
@@ -23,7 +27,9 @@ export default function AppNavbar() {
 
       <Spacer />
 
-      <AppPrimaryButton>Send a Wave</AppPrimaryButton>
+      <AppPrimaryButton onClick={onClickActionButton}>
+        Connect Wallet
+      </AppPrimaryButton>
     </Box>
   );
 }

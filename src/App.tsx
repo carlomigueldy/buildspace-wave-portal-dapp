@@ -3,7 +3,6 @@ import {
   extendTheme,
   ThemeConfig,
   withDefaultColorScheme,
-  withDefaultProps,
 } from "@chakra-ui/react";
 import React from "react";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
