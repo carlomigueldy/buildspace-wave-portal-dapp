@@ -1,38 +1,61 @@
-import { Box, Button, Center, Spacer, Text } from "@chakra-ui/react";
-import { useToast } from "@chakra-ui/toast";
 import React, { useEffect, useState } from "react";
+
+import { Box, Center, Text } from "@chakra-ui/react";
+
 import AppNavbar from "../components/AppNavbar";
 import AppPrimaryButton from "../components/AppPrimaryButton";
+import useAppToast from "../hooks/useAppToast.hook";
+
+type HomeState = {
+  currentAccount: string;
+  web3Enabled: boolean;
+};
 
 export default function Home() {
-  const [currentAccount, setCurrentAccount] = useState<string>("");
-  const toast = useToast();
+  const [state, setState] = useState<HomeState>({
+    currentAccount: "",
+    web3Enabled: false,
+  });
+  const toast = useAppToast();
 
   const { ethereum } = window;
 
   function checkIfWalletIsConnected() {
-    setTimeout(() => {
-      if (!ethereum) {
-        toast({
-          title: "No Wallet Found",
-          description: "Connect to your Web 3 wallet to continue.",
-          status: "info",
-          duration: 6000,
-          isClosable: true,
-        });
+    if (!ethereum) {
+      toast.info({
+        title: "No Wallet Found",
+        description: "Make sure to have installed MetaMask or similar wallet",
+      });
 
-        return;
+      return;
+    }
+
+    return setState({
+      ...state,
+      web3Enabled: true,
+    });
+  }
+
+  async function connectWallet() {
+    try {
+      const accounts = await ethereum.request({ method: "eth_accounts" });
+
+      if (accounts.length > 0) {
+        return setState({
+          ...state,
+          currentAccount: accounts[0],
+        });
       }
 
-      ethereum
-        .request({ method: "eth_accounts" })
-        .then((accounts: any) => {
-          if (accounts.length > 0) {
-            setCurrentAccount(accounts[0]);
-          }
-        })
-        .catch((err: any) => console.error(err));
-    }, 1000);
+      return toast.error({
+        title: "No Accounts Found",
+        description: "Can't find any accounts in your wallet",
+      });
+    } catch (error) {
+      console.error(error);
+
+      return toast.unexpectedError();
+    }
   }
 
   useEffect(() => {
@@ -51,7 +74,7 @@ export default function Home() {
             flexDirection="column"
             alignItems="center"
           >
-            <Text fontSize="7xl">Wave Portal 👋</Text>
+            <Text fontSize="6xl">Wave Portal 👋</Text>
             <Text fontSize="xl">This is my first Dycentralized App</Text>
           </Box>
         </Center>
