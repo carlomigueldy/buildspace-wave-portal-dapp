@@ -4,10 +4,14 @@ import { Box, Text, Spacer } from "@chakra-ui/react";
 import AppPrimaryButton from "./AppPrimaryButton";
 
 export type AppNavbarProps = {
+  actionButtonLabel?: string;
   onClickActionButton?(): void;
 };
 
-export default function AppNavbar({ onClickActionButton }: AppNavbarProps) {
+export default function AppNavbar({
+  onClickActionButton,
+  actionButtonLabel,
+}: AppNavbarProps) {
   return (
     <Box
       height="60px"
@@ -19,7 +23,7 @@ export default function AppNavbar({ onClickActionButton }: AppNavbarProps) {
       // bgColor="rgba(0, 0, 0, 0.5)"
       backdropFilter="blur(12px)"
       width="100%"
-      p={[0, 5, 0, 5]}
+      padding={[0, 10, 0, 10]}
     >
       <Text fontSize="xl" color="white" fontWeight="bold">
         {"{ DyApp }"}
@@ -28,7 +32,7 @@ export default function AppNavbar({ onClickActionButton }: AppNavbarProps) {
       <Spacer />
 
       <AppPrimaryButton onClick={onClickActionButton}>
-        Connect Wallet
+        {actionButtonLabel ?? "Action"}
       </AppPrimaryButton>
     </Box>
   );

@@ -1,7 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 
-import { Box, Center, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Center,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  Textarea,
+  useDisclosure,
+} from "@chakra-ui/react";
 
 import AppNavbar from "../components/AppNavbar";
 import AppPrimaryButton from "../components/AppPrimaryButton";
@@ -34,21 +49,41 @@ type HomeState = {
   currentAccount: string;
   web3Enabled: boolean;
   waves: Wave[];
+  displayName: string;
+};
+
+type FormState = {
+  displayName: string;
+  message: string;
+};
+
+const formDefaultValue = {
+  displayName: "",
+  message: "",
 };
 
 export default function Home() {
   const { ethereum } = window;
-  const contract = useWavePortalContract();
   const toast = useAppToast();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [form, setForm] = useState<FormState>(formDefaultValue);
   const [state, setState] = useState<HomeState>({
     totalWaves: 0,
     currentAccount: "",
     web3Enabled: false,
     waves: [],
+    displayName: "",
   });
+  const {
+    isOpen,
+    onOpen: openFormModal,
+    onClose: closeFormModal,
+  } = useDisclosure();
+  const contract = ethereum ? useWavePortalContract() : null;
 
   useEffect(() => {
     checkIfWalletIsConnected();
+    getWaves();
   }, []);
 
   async function showNoWalletFoundToast() {
@@ -62,17 +97,23 @@ export default function Home() {
     if (!ethereum) {
       showNoWalletFoundToast();
 
+      console.log("checkIfWalletIsConnected | ethereum is undefined");
+
       return;
     }
 
     try {
       const accounts = await ethereum.request({ method: "eth_accounts" });
+      console.log(`checkIfWalletIsConnected | accounts`, accounts);
 
       if (accounts.length > 0) {
-        return setState({
+        setState({
           ...state,
           currentAccount: accounts[0],
         });
+        console.log(`checkIfWalletIsConnected | state`, state);
+
+        return;
       }
 
       return setState({
@@ -114,22 +155,34 @@ export default function Home() {
       return showNoWalletFoundToast();
     }
 
+    if (await hasWaved()) {
+      return toast.info({
+        title: "Already Sent a Wave",
+        description: "You have already sent a wave.",
+      });
+    }
+
+    if (!form.displayName) {
+      return openFormModal();
+    }
+
     await connectWallet();
 
-    const waveTxn = await contract.wave({
+    const waveTxn = await contract?.wave({
+      display_name: form.displayName,
+      message: form.message,
       created_at: new Date().getTime(),
-      message: "Hello World",
-      display_name: "Carlo Miguel Dy",
     });
-
     console.log("⛏️ Mining...", waveTxn.hash);
     waveTxn.wait();
     console.log("Mined --", waveTxn.hash);
     getTotalWaves();
+    setForm(formDefaultValue);
+    closeFormModal();
   }
 
   async function getTotalWaves() {
-    const totalWaves = await contract.getTotalWaves();
+    const totalWaves = await contract?.getTotalWaves();
     setState({
       ...state,
       totalWaves,
@@ -137,92 +190,158 @@ export default function Home() {
   }
 
   async function hasWaved(): Promise<boolean> {
-    return await contract.hasWaved();
+    return await contract?.hasWaved();
   }
 
   async function getWaves() {
-    const waves = await contract.getWaves();
-    console.log("waves", waves);
-    setState({
-      ...state,
-      waves,
-    });
+    try {
+      setLoading(true);
+      const waves = await contract?.getWaves();
+      console.log("waves", waves);
+      setState({
+        ...state,
+        waves,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <Box height="100%">
-      <AppNavbar onClickActionButton={() => connectWallet()} />
+    <>
+      <Box height="100%">
+        <AppNavbar
+          actionButtonLabel={
+            !state.currentAccount ? "Connect Wallet" : "Send Wave"
+          }
+          onClickActionButton={!state.currentAccount ? connectWallet : wave}
+        />
 
-      <Box minHeight="100vh" p={10}>
-        <Center>
-          <Box
-            display="flex"
-            justifyContent="center"
-            flexDirection="column"
-            alignItems="center"
-          >
-            <Text fontSize="6xl">Wave Portal 👋</Text>
-            <Text fontSize="xl">This is my first Dycentralized App</Text>
-          </Box>
-        </Center>
+        <Box minHeight="100vh" p={10}>
+          <Center>
+            <Box
+              display="flex"
+              justifyContent="center"
+              flexDirection="column"
+              alignItems="center"
+            >
+              <Text fontSize="6xl">Wave Portal 👋</Text>
+              <Text fontSize="xl">This is my first Dycentralized App</Text>
+            </Box>
+          </Center>
 
-        <Box
-          marginTop="100px"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          flexDir="column"
-        >
-          <Text>There are no waves yet. Be the first to send a wave!</Text>
+          {loading ? (
+            <Center>Loading...</Center>
+          ) : (
+            <>
+              {" "}
+              <Box
+                marginTop="30px"
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                flexDir="column"
+              >
+                {state.waves?.length == 0 ? (
+                  <>
+                    {" "}
+                    <Text>
+                      There are no waves yet. Be the first to send a wave!
+                    </Text>
+                    <Box h="20px" />
+                    <AppPrimaryButton onClick={() => wave()} size="lg">
+                      Wave
+                    </AppPrimaryButton>
+                  </>
+                ) : null}
 
-          <Box h="20px" />
+                {state.waves?.map((d, index) => {
+                  return (
+                    <Box
+                      bgColor="primary"
+                      m={2}
+                      p={5}
+                      borderRadius="md"
+                      width={500}
+                      key={index}
+                    >
+                      <Text fontSize="xl" fontWeight="semibold">
+                        {d.display_name}
+                      </Text>
+                      <Text fontSize="md">{d.owner.toString()}</Text>
 
-          <AppPrimaryButton onClick={() => wave()} size="lg">
-            Wave
-          </AppPrimaryButton>
+                      <Box height={10} />
 
-          <Box h="20px" />
-          <AppPrimaryButton onClick={() => hasWaved()}>
-            hasWaved
-          </AppPrimaryButton>
-          <Box h="20px" />
-          <AppPrimaryButton onClick={() => getWaves()}>
-            getWaves
-          </AppPrimaryButton>
-
-          {state.waves.map((d, index) => {
-            return (
-              <Box key={index}>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      index: Number(d.index.toString()),
-                      display_name: d.display_name,
-                      created_at: new Date(
-                        Number(d.created_at.toString()) * 1000
-                      ),
-                      message: d.message,
-                      owner: d.owner.toString(),
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
+                      <Text fontSize="md">{d.message}</Text>
+                      {/* <pre>
+                        {JSON.stringify(
+                          {
+                            index: Number(d.index.toString()),
+                            display_name: d.display_name,
+                            created_at: new Date(
+                              Number(d.created_at.toString()) * 1000
+                            ),
+                            message: d.message,
+                            owner: d.owner.toString(),
+                          },
+                          null,
+                          2
+                        )}
+                      </pre> */}
+                    </Box>
+                  );
+                })}
               </Box>
-            );
-          })}
+            </>
+          )}
+        </Box>
+
+        <Box p={5} display="flex" justifyContent="center" alignItems="center">
+          <Text>Built with ❤️ by</Text>
+          <Box w="5px" />
+          <Text fontWeight="bold">
+            <a href="https://twitter.com/CarloMiguelDy" target="_blank">
+              carlomigueldy.eth
+            </a>
+          </Text>
         </Box>
       </Box>
 
-      <Box p={5} display="flex" justifyContent="center" alignItems="center">
-        <Text>Built with ❤️ by</Text>
-        <Box w="5px" />
-        <Text fontWeight="bold">
-          <a href="https://twitter.com/CarloMiguelDy" target="_blank">
-            carlomigueldy.eth
-          </a>
-        </Text>
-      </Box>
-    </Box>
+      <Modal
+        closeOnOverlayClick={false}
+        isOpen={isOpen}
+        onClose={closeFormModal}
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Create your account</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Input
+              mb={2}
+              placeholder="Your Display Name"
+              onChange={(event) =>
+                setForm({ ...form, displayName: event.target?.value })
+              }
+            />
+            <Textarea
+              placeholder="Your message"
+              onChange={(event) =>
+                setForm({ ...form, message: event.target?.value })
+              }
+            ></Textarea>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={wave} mr={3}>
+              Save
+            </Button>
+            <Button onClick={closeFormModal}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
