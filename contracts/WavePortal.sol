@@ -50,6 +50,7 @@ contract WavePortal {
     }
 
     function hasWaved() public view returns (bool) {
+        console.log('_wavesIndex[msg.sender]', _wavesIndex[msg.sender]);
         return _wavesIndex[msg.sender] >= 0;
     }
 
