@@ -24,8 +24,12 @@ import AppPrimaryButton from "../components/AppPrimaryButton";
 import useAppToast from "../hooks/useAppToast.hook";
 import WavePortal from "../../artifacts/contracts/WavePortal.sol/WavePortal.json";
 import AppFooter from "../components/AppFooter";
+import { TESTNET_WAVE_PORTAL_ADDRESS } from "../constants";
 
-const WAVE_PORTAL_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const WAVE_PORTAL_ADDRESS =
+  process.env.APP_ENV == "prod"
+    ? TESTNET_WAVE_PORTAL_ADDRESS
+    : "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 function useWavePortalContract() {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
