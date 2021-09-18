@@ -8,29 +8,48 @@ import AppPrimaryButton from "../components/AppPrimaryButton";
 import useAppToast from "../hooks/useAppToast.hook";
 import WavePortal from "../../artifacts/contracts/WavePortal.sol/WavePortal.json";
 
+const WAVE_PORTAL_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
 function useWavePortalContract() {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
-  const wavePortalContract = new ethers.Contract(
-    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  const contract = new ethers.Contract(
+    WAVE_PORTAL_ADDRESS,
     WavePortal.abi,
     signer
   );
-  return wavePortalContract;
+  return contract;
 }
 
+type Wave = {
+  index: number;
+  owner: string;
+  display_name: string;
+  message: string;
+  created_at: number;
+};
+
 type HomeState = {
+  totalWaves: number;
   currentAccount: string;
   web3Enabled: boolean;
+  waves: Wave[];
 };
 
 export default function Home() {
   const { ethereum } = window;
+  const contract = useWavePortalContract();
   const toast = useAppToast();
   const [state, setState] = useState<HomeState>({
+    totalWaves: 0,
     currentAccount: "",
     web3Enabled: false,
+    waves: [],
   });
+
+  useEffect(() => {
+    checkIfWalletIsConnected();
+  }, []);
 
   async function showNoWalletFoundToast() {
     toast.info({
@@ -60,7 +79,9 @@ export default function Home() {
         ...state,
         web3Enabled: true,
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async function connectWallet() {
@@ -94,35 +115,45 @@ export default function Home() {
     }
 
     await connectWallet();
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(
-      "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      WavePortal.abi,
-      signer
-    );
-    const waveTxn = await contract.wave();
+
+    const waveTxn = await contract.wave({
+      created_at: new Date().getTime(),
+      message: "Hello World",
+      display_name: "Carlo Miguel Dy",
+    });
+
     console.log("⛏️ Mining...", waveTxn.hash);
     waveTxn.wait();
     console.log("Mined --", waveTxn.hash);
+    getTotalWaves();
+  }
 
-    const count = await contract.getTotalWaves();
-
-    toast.info({
-      title: "Total Waves",
-      description: `Total Waves are ${count}`,
+  async function getTotalWaves() {
+    const totalWaves = await contract.getTotalWaves();
+    setState({
+      ...state,
+      totalWaves,
     });
   }
 
-  useEffect(() => {
-    checkIfWalletIsConnected();
-  }, []);
+  async function hasWaved(): Promise<boolean> {
+    return await contract.hasWaved();
+  }
+
+  async function getWaves() {
+    const waves = await contract.getWaves();
+    console.log("waves", waves);
+    setState({
+      ...state,
+      waves,
+    });
+  }
 
   return (
     <Box height="100%">
       <AppNavbar onClickActionButton={() => connectWallet()} />
 
-      <Box height="100vh" p={10}>
+      <Box minHeight="100vh" p={10}>
         <Center>
           <Box
             display="flex"
@@ -149,6 +180,37 @@ export default function Home() {
           <AppPrimaryButton onClick={() => wave()} size="lg">
             Wave
           </AppPrimaryButton>
+
+          <Box h="20px" />
+          <AppPrimaryButton onClick={() => hasWaved()}>
+            hasWaved
+          </AppPrimaryButton>
+          <Box h="20px" />
+          <AppPrimaryButton onClick={() => getWaves()}>
+            getWaves
+          </AppPrimaryButton>
+
+          {state.waves.map((d, index) => {
+            return (
+              <Box key={index}>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      index: Number(d.index.toString()),
+                      display_name: d.display_name,
+                      created_at: new Date(
+                        Number(d.created_at.toString()) * 1000
+                      ),
+                      message: d.message,
+                      owner: d.owner.toString(),
+                    },
+                    null,
+                    2
+                  )}
+                </pre>
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 

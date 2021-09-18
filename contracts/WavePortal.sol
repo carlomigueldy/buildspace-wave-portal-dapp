@@ -3,20 +3,57 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract WavePortal {
-    uint256 totalWaves;
+    using Counters for Counters.Counter;
+    Counters.Counter private _waverIndex;
+    mapping(address => uint256) private _wavesIndex;
+    Wave[] private _waves;
 
-    constructor() {
-        console.log("I am a Wave Portal smart contract");
+    struct Wave {
+        uint256 index;
+        address owner;
+        string display_name;
+        string message;
+        uint256 created_at;
     }
 
-    function wave() public {
-        totalWaves += 1;
+    struct WaveDto {
+        string display_name;
+        string message;
+        uint256 created_at;
+    }
+
+    constructor() {
+        console.log("I am a Wave Portal smart contract, owner: ", msg.sender);
+    }
+
+    function wave(WaveDto memory dto) public {
+        _waverIndex.increment();
+        _waves.push(
+            Wave({
+                index: _waverIndex.current(),
+                owner: msg.sender,
+                display_name: dto.display_name,
+                message: dto.message,
+                created_at: dto.created_at
+            })
+        );
+        _wavesIndex[msg.sender] = _waverIndex.current();
+
         console.log("%s just waved", msg.sender);
     }
 
     function getTotalWaves() public view returns (uint256) {
-        return totalWaves;
+        return _waves.length;
+    }
+
+    function hasWaved() public view returns (bool) {
+        return _wavesIndex[msg.sender] >= 0;
+    }
+
+    function getWaves() public view returns (Wave[] memory) {
+        return _waves;
     }
 }
