@@ -9,6 +9,8 @@ contract WavePortal {
     using Counters for Counters.Counter;
     Counters.Counter private _waverIndex;
     Wave[] private _waves;
+    uint256 private seed;
+    mapping(address => uint256) public lastWavedAt;
 
     struct Wave {
         uint256 index;
@@ -36,6 +38,11 @@ contract WavePortal {
     }
 
     function wave(WaveDto memory dto) public {
+        require(
+            lastWavedAt[msg.sender] + 15 minutes < block.timestamp,
+            "Wait 15m before sending another wave."
+        );
+
         _waverIndex.increment();
         Wave memory newWave = Wave({
             index: _waverIndex.current(),
@@ -53,16 +60,25 @@ contract WavePortal {
             newWave.message,
             newWave.created_at
         );
+        lastWavedAt[msg.sender] = block.timestamp;
 
         console.log("%s just waved", msg.sender);
 
-        uint256 prizeAmount = 0.00001 ether;
-        require(
-            prizeAmount <= address(this).balance,
-            "Trying to withdraw more ether than the contract has."
-        );
-        (bool success, ) = (msg.sender).call{value: prizeAmount}("");
-        require(success, "Failed to withdraw ether from contract.");
+        uint256 randomNumber = (block.difficulty + block.timestamp + seed) &
+            100;
+        console.log("Random # generated: %s", randomNumber);
+
+        seed = randomNumber;
+
+        if (randomNumber < 50) {
+            uint256 prizeAmount = 0.00001 ether;
+            require(
+                prizeAmount <= address(this).balance,
+                "Trying to withdraw more ether than the contract has."
+            );
+            (bool success, ) = (msg.sender).call{value: prizeAmount}("");
+            require(success, "Failed to withdraw ether from contract.");
+        }
     }
 
     function getTotalWaves() public view returns (uint256) {
