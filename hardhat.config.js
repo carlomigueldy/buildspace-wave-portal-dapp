@@ -26,6 +26,7 @@ module.exports = {
     rinkeby: {
       url: process.env.ALCHEMY_API_URL,
       accounts: [process.env.RINKEBY_PRIVATE_KEY],
+      gas: 100000
     },
   },
 };
