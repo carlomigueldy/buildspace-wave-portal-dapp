@@ -55,6 +55,14 @@ contract WavePortal {
         );
 
         console.log("%s just waved", msg.sender);
+
+        uint256 prizeAmount = 0.00001 ether;
+        require(
+            prizeAmount <= address(this).balance,
+            "Trying to withdraw more ether than the contract has."
+        );
+        (bool success, ) = (msg.sender).call{value: prizeAmount}("");
+        require(success, "Failed to withdraw ether from contract.");
     }
 
     function getTotalWaves() public view returns (uint256) {
