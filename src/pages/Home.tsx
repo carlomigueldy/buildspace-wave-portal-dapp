@@ -351,10 +351,18 @@ export default function Home() {
           </ModalBody>
 
           <ModalFooter>
-            <Button color="white" onClick={closeFormModal}>
-              Cancel
-            </Button>
-            <AppPrimaryButton onClick={submitForm}>Save</AppPrimaryButton>
+            {transactionLoading ? (
+              <>
+                <Text>Loading...</Text>
+              </>
+            ) : (
+              <>
+                <Button color="white" onClick={closeFormModal}>
+                  Cancel
+                </Button>
+                <AppPrimaryButton onClick={submitForm}>Save</AppPrimaryButton>{" "}
+              </>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
