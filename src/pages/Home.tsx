@@ -326,7 +326,7 @@ export default function Home() {
                         position="relative"
                         display="flex"
                         justifyContent="space-between"
-                        alignItems="center"
+                        alignItems="start"
                       >
                         <Box>
                           <Text fontSize="xl" fontWeight="semibold">
@@ -343,7 +343,7 @@ export default function Home() {
                             {moment(d.created_at * 1000).fromNow()}
                           </Text>
                         </Box>
-                        <Box mr={5}>
+                        <Box ml={10} mr={5}>
                           <Text fontSize="5xl">{d.emoji}</Text>
                         </Box>
                       </Box>
