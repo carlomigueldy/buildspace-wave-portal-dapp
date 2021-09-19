@@ -197,31 +197,39 @@ export default function Home() {
       return openFormModal();
     }
 
-    await connectWallet();
+    try {
+      await connectWallet();
 
-    const waveTxn = await contract?.wave(
-      {
-        display_name: form.displayName,
-        message: form.message,
-      },
-      {
-        gasLimit: 300_000,
-      }
-    );
-    setTransactionLoading(true);
-    console.log("⛏️ Mining...", waveTxn.hash);
-    await waveTxn.wait();
-    console.log("Mined --", waveTxn.hash);
-    setTransactionLoading(false);
-    setForm(formDefaultValue);
-    closeFormModal();
-    // getWaves();
-    setShowConfetti(true);
-    openSuccessModal();
+      const waveTxn = await contract?.wave(
+        {
+          display_name: form.displayName,
+          message: form.message,
+        },
+        {
+          gasLimit: 300_000,
+        }
+      );
+      setTransactionLoading(true);
+      console.log("⛏️ Mining...", waveTxn.hash);
+      await waveTxn.wait();
+      console.log("Mined --", waveTxn.hash);
+      setTransactionLoading(false);
+      setForm(formDefaultValue);
+      closeFormModal();
+      // getWaves();
+      setShowConfetti(true);
+      openSuccessModal();
 
-    setTimeout(() => {
-      setShowConfetti(false);
-    }, 60000);
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 60000);
+    } catch (error) {
+      console.error(error);
+      toast.error({
+        title: "Unable to send wave",
+        description: "Try again later in 15 minutes",
+      });
+    }
   }
 
   async function getWaves() {
