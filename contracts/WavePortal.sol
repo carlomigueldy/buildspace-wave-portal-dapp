@@ -18,6 +18,7 @@ contract WavePortal {
         string display_name;
         string message;
         uint256 created_at;
+        string emoji;
     }
 
     event WaveCreated(
@@ -25,12 +26,14 @@ contract WavePortal {
         address owner,
         string display_name,
         string message,
-        uint256 created_at
+        uint256 created_at,
+        string emoji
     );
 
     struct WaveDto {
         string display_name;
         string message;
+        string emoji;
     }
 
     constructor() payable {
@@ -49,7 +52,8 @@ contract WavePortal {
             owner: msg.sender,
             display_name: dto.display_name,
             message: dto.message,
-            created_at: block.timestamp
+            created_at: block.timestamp,
+            emoji: dto.emoji
         });
         _waves.push(newWave);
 
@@ -58,7 +62,8 @@ contract WavePortal {
             newWave.owner,
             newWave.display_name,
             newWave.message,
-            newWave.created_at
+            newWave.created_at,
+            newWave.emoji
         );
         lastWavedAt[msg.sender] = block.timestamp;
 

@@ -27,10 +27,11 @@ import WavePortal from "../../artifacts/contracts/WavePortal.sol/WavePortal.json
 import AppFooter from "../components/AppFooter";
 import { TESTNET_WAVE_PORTAL_ADDRESS } from "../constants";
 import moment from "moment";
+import useRandomEmoji from "../hooks/useRandomEmoji.hook";
 
 const WAVE_PORTAL_ADDRESS = import.meta.env.PROD
   ? TESTNET_WAVE_PORTAL_ADDRESS
-  : "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
+  : "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853";
 
 function useWavePortalContract() {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -49,6 +50,7 @@ type Wave = {
   display_name: string;
   message: string;
   created_at: number;
+  emoji: string;
 };
 
 type HomeState = {
@@ -103,13 +105,14 @@ export default function Home() {
 
     contract?.on(
       "WaveCreated",
-      (index, owner, display_name, message, created_at) => {
+      (index, owner, display_name, message, created_at, emoji) => {
         const payload = {
           index,
           owner,
           display_name,
           message,
           created_at,
+          emoji,
         };
         console.log("WaveCreated", {
           payload,
@@ -204,6 +207,7 @@ export default function Home() {
         {
           display_name: form.displayName,
           message: form.message,
+          emoji: useRandomEmoji(),
         },
         {
           gasLimit: 300_000,
@@ -319,20 +323,29 @@ export default function Home() {
                         p={5}
                         borderRadius="md"
                         width={500}
+                        position="relative"
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
                       >
-                        <Text fontSize="xl" fontWeight="semibold">
-                          {d.display_name ?? "Anonymous"} sent a wave 👋
-                        </Text>
-                        {/* <Text fontSize="xs">{d.owner.toString()}</Text> */}
+                        <Box>
+                          <Text fontSize="xl" fontWeight="semibold">
+                            {d.display_name ?? "Anonymous"} sent a wave 👋
+                          </Text>
+                          {/* <Text fontSize="xs">{d.owner.toString()}</Text> */}
 
-                        <Box height={2} />
+                          <Box height={2} />
 
-                        <Text fontSize="md">{d.message}</Text>
+                          <Text fontSize="md">{d.message}</Text>
 
-                        <Box height={5} />
-                        <Text fontSize="xs">
-                          {moment(d.created_at * 1000).fromNow()}
-                        </Text>
+                          <Box height={5} />
+                          <Text fontSize="xs">
+                            {moment(d.created_at * 1000).fromNow()}
+                          </Text>
+                        </Box>
+                        <Box mr={5}>
+                          <Text fontSize="5xl">{d.emoji}</Text>
+                        </Box>
                       </Box>
                     </Tooltip>
                   );
