@@ -31,7 +31,7 @@ contract WavePortal {
         string message;
     }
 
-    constructor() {
+    constructor() payable {
         console.log("I am a Wave Portal smart contract, owner: ", msg.sender);
     }
 
