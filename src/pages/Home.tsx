@@ -16,6 +16,7 @@ import {
   ModalOverlay,
   Text,
   Textarea,
+  Tooltip,
   useDisclosure,
 } from "@chakra-ui/react";
 
@@ -25,12 +26,11 @@ import useAppToast from "../hooks/useAppToast.hook";
 import WavePortal from "../../artifacts/contracts/WavePortal.sol/WavePortal.json";
 import AppFooter from "../components/AppFooter";
 import { TESTNET_WAVE_PORTAL_ADDRESS } from "../constants";
+import moment from "moment";
 
 const WAVE_PORTAL_ADDRESS = import.meta.env.PROD
   ? TESTNET_WAVE_PORTAL_ADDRESS
-  : "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
-console.log({ WAVE_PORTAL_ADDRESS, TESTNET_WAVE_PORTAL_ADDRESS });
+  : "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
 function useWavePortalContract() {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -180,7 +180,6 @@ export default function Home() {
     const waveTxn = await contract?.wave({
       display_name: form.displayName,
       message: form.message,
-      created_at: new Date().getTime(),
     });
     setTransactionLoading(true);
     console.log("⛏️ Mining...", waveTxn.hash);
@@ -278,23 +277,29 @@ export default function Home() {
 
                 {state.waves?.map((d, index) => {
                   return (
-                    <Box
-                      bgColor="primary"
-                      m={2}
-                      p={5}
-                      borderRadius="md"
-                      width={500}
-                      key={index}
-                    >
-                      <Text fontSize="xl" fontWeight="semibold">
-                        {d.display_name ?? "Anonymous"} sent a wave 👋
-                      </Text>
-                      <Text fontSize="xs">{d.owner.toString()}</Text>
+                    <Tooltip key={index} label={d.owner}>
+                      <Box
+                        bgColor="primary"
+                        m={2}
+                        p={5}
+                        borderRadius="md"
+                        width={500}
+                      >
+                        <Text fontSize="xl" fontWeight="semibold">
+                          {d.display_name ?? "Anonymous"} sent a wave 👋
+                        </Text>
+                        {/* <Text fontSize="xs">{d.owner.toString()}</Text> */}
 
-                      <Box height={10} />
+                        <Box height={2} />
 
-                      <Text fontSize="md">{d.message}</Text>
-                    </Box>
+                        <Text fontSize="md">{d.message}</Text>
+
+                        <Box height={5} />
+                        <Text fontSize="xs">
+                          {moment(d.created_at * 1000).fromNow()}
+                        </Text>
+                      </Box>
+                    </Tooltip>
                   );
                 })}
               </Box>
